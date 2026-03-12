@@ -4,15 +4,18 @@ from __future__ import annotations
 
 import json
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Iterator
+from typing import IO, Iterator
 
-import fcntl
+from filelock import FileLock
 
+from whylosemoney.exceptions import StorageError
 from whylosemoney.models import Expense
 
 DATA_FILE: Path = Path.home() / ".whylosemoney" / "data.json"
+LOCK_FILE: Path = DATA_FILE.parent / "data.json.lock"
+HISTORY_FILE: Path = Path.home() / ".whylosemoney" / "history.jsonl"
 
 
 def _ensure_data_file() -> None:
@@ -23,38 +26,54 @@ def _ensure_data_file() -> None:
 
 
 @contextmanager
-def _locked_file() -> Iterator[object]:
+def _locked_file() -> Iterator[IO[str]]:
     """Open the JSON file with an exclusive lock for safe read/write cycles."""
     _ensure_data_file()
-    with DATA_FILE.open("r+", encoding="utf-8") as handle:
-        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
-        try:
+    lock = FileLock(str(LOCK_FILE), timeout=10)
+    with lock:
+        with DATA_FILE.open("r+", encoding="utf-8") as handle:
             yield handle
-        finally:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
 
-def _load_records(handle: object) -> dict[str, list[dict[str, object]]]:
+def _load_records(handle: IO[str]) -> dict[str, list[dict[str, object]]]:
     """Load JSON records from an already locked file handle."""
-    handle.seek(0)
-    raw_content = handle.read()
-    if not raw_content.strip():
-        return {"expenses": []}
-    data = json.loads(raw_content)
-    if not isinstance(data, dict):
-        raise ValueError("Storage file is malformed.")
-    expenses = data.get("expenses", [])
-    if not isinstance(expenses, list):
-        raise ValueError("Storage file is malformed.")
-    return {"expenses": expenses}
+    try:
+        handle.seek(0)
+        raw_content = handle.read()
+        if not raw_content.strip():
+            return {"expenses": []}
+        data = json.loads(raw_content)
+        if not isinstance(data, dict):
+            raise ValueError("Storage file is malformed.")
+        expenses = data.get("expenses", [])
+        if not isinstance(expenses, list):
+            raise ValueError("Storage file is malformed.")
+        return {"expenses": expenses}
+    except (json.JSONDecodeError, ValueError) as exc:
+        raise StorageError(f"Failed to parse storage file: {exc}") from exc
 
 
-def _write_records(handle: object, data: dict[str, list[dict[str, object]]]) -> None:
+def _write_records(handle: IO[str], data: dict[str, list[dict[str, object]]]) -> None:
     """Persist JSON records to an already locked file handle."""
     handle.seek(0)
     json.dump(data, handle, indent=2)
     handle.truncate()
     handle.flush()
+
+
+def _log_operation(operation: str, detail: dict[str, object]) -> None:
+    """Append an audit log entry without interrupting user operations on failure."""
+    try:
+        HISTORY_FILE.parent.mkdir(parents=True, exist_ok=True)
+        entry = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "operation": operation,
+            "detail": detail,
+        }
+        with HISTORY_FILE.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(entry) + "\n")
+    except OSError:
+        pass
 
 
 def add_expense(expense: Expense) -> Expense:
@@ -63,6 +82,10 @@ def add_expense(expense: Expense) -> Expense:
         data = _load_records(handle)
         data["expenses"].append(expense.model_dump(mode="json"))
         _write_records(handle, data)
+    _log_operation(
+        "add",
+        {"id": expense.id, "amount": expense.amount, "category": expense.category},
+    )
     return expense
 
 
@@ -105,4 +128,23 @@ def delete_expense(expense_id: str) -> bool:
         deleted = len(data["expenses"]) != original_count
         if deleted:
             _write_records(handle, data)
+    if deleted:
+        _log_operation("delete", {"id": expense_id})
     return deleted
+
+
+def get_history(limit: int = 50) -> list[dict[str, object]]:
+    """Return the most recent audit log entries."""
+    if not HISTORY_FILE.exists():
+        return []
+
+    lines = HISTORY_FILE.read_text(encoding="utf-8").strip().splitlines()
+    entries: list[dict[str, object]] = []
+    for line in lines[-limit:]:
+        try:
+            entry = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(entry, dict):
+            entries.append(entry)
+    return entries

@@ -12,6 +12,8 @@ dependencies = [
     "click>=8.1",
     "pydantic>=2,<3",
     "tabulate>=0.9",
+    "rich>=13.0",
+    "filelock>=3.12",
 ]
 
 [project.optional-dependencies]
