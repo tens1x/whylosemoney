@@ -23,6 +23,7 @@ from whylosemoney.models import Expense
 from whylosemoney.storage import add_expense, delete_expense, list_expenses
 
 _console = Console()
+_PERIOD_LABELS = {"daily": "每日", "weekly": "每周", "monthly": "月度"}
 
 
 def _parse_datetime(value: str, *, end_of_day: bool = False) -> datetime:
@@ -31,7 +32,7 @@ def _parse_datetime(value: str, *, end_of_day: bool = False) -> datetime:
         parsed = datetime.fromisoformat(value)
     except ValueError as exc:
         raise click.BadParameter(
-            "Use ISO format such as YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS."
+            "请使用 ISO 格式，如 YYYY-MM-DD 或 YYYY-MM-DDTHH:MM:SS。"
         ) from exc
 
     if len(value) == 10:
@@ -42,12 +43,12 @@ def _parse_datetime(value: str, *, end_of_day: bool = False) -> datetime:
 
 def _render_expenses(expenses: list[Expense]) -> None:
     """Render expenses as a rich table."""
-    table = RichTable(title="Expenses")
+    table = RichTable(title="支出记录")
     table.add_column("ID", style="dim", no_wrap=True)
-    table.add_column("Date", style="cyan")
-    table.add_column("Category", style="green")
-    table.add_column("Amount", style="yellow", justify="right")
-    table.add_column("Note")
+    table.add_column("日期", style="cyan")
+    table.add_column("分类", style="green")
+    table.add_column("金额", style="yellow", justify="right")
+    table.add_column("备注")
     for expense in expenses:
         table.add_row(
             expense.id,
@@ -66,9 +67,9 @@ def _raise_click_exception(exc: WhyLoseMoneyError) -> None:
 
 def _build_summary_table(period: str, summary: dict[str, float]) -> RichTable:
     """Build the summary table for the selected period."""
-    table = RichTable(title=f"{period.capitalize()} Summary")
-    table.add_column("Period", style="cyan")
-    table.add_column("Total", style="yellow", justify="right")
+    table = RichTable(title=f"{_PERIOD_LABELS[period]}汇总")
+    table.add_column("时段", style="cyan")
+    table.add_column("合计", style="yellow", justify="right")
     for label, total in summary.items():
         table.add_row(label, f"{total:.2f}")
     return table
@@ -78,10 +79,10 @@ def _build_breakdown_table(expenses: list[Expense]) -> RichTable:
     """Build the category breakdown table for the provided expenses."""
     totals = total_by_category(expenses)
     breakdown = percentage_breakdown(expenses)
-    table = RichTable(title="Category Breakdown")
-    table.add_column("Category", style="green")
-    table.add_column("Total", style="yellow", justify="right")
-    table.add_column("Percentage", style="cyan", justify="right")
+    table = RichTable(title="分类明细")
+    table.add_column("分类", style="green")
+    table.add_column("合计", style="yellow", justify="right")
+    table.add_column("占比", style="cyan", justify="right")
     for category, total in totals.items():
         table.add_row(category, f"{total:.2f}", f"{breakdown[category]:.2f}%")
     return table
@@ -89,12 +90,12 @@ def _build_breakdown_table(expenses: list[Expense]) -> RichTable:
 
 def _build_top_expenses_table(expenses: list[Expense]) -> RichTable:
     """Build the top-expenses table for analysis output."""
-    table = RichTable(title="Top Expenses")
+    table = RichTable(title="最大支出")
     table.add_column("ID", style="dim", no_wrap=True)
-    table.add_column("Date", style="cyan")
-    table.add_column("Category", style="green")
-    table.add_column("Amount", style="yellow", justify="right")
-    table.add_column("Note")
+    table.add_column("日期", style="cyan")
+    table.add_column("分类", style="green")
+    table.add_column("金额", style="yellow", justify="right")
+    table.add_column("备注")
     for expense in top_expenses(expenses):
         table.add_row(
             expense.id,
@@ -109,7 +110,7 @@ def _build_top_expenses_table(expenses: list[Expense]) -> RichTable:
 @click.group(invoke_without_command=True)
 @click.pass_context
 def cli(ctx: click.Context) -> None:
-    """Track expenses and analyze spending patterns."""
+    """追踪支出，分析消费模式。"""
     if ctx.invoked_subcommand is None:
         import sys
 
@@ -122,12 +123,12 @@ def cli(ctx: click.Context) -> None:
 
 
 @cli.command("add")
-@click.option("--amount", required=True, type=float, help="Expense amount.")
-@click.option("--category", required=True, type=str, help="Expense category.")
-@click.option("--note", default="", show_default=True, type=str, help="Optional note.")
-@click.option("--date", "date_value", type=str, help="Expense date in ISO format.")
+@click.option("--amount", required=True, type=float, help="支出金额。")
+@click.option("--category", required=True, type=str, help="支出分类。")
+@click.option("--note", default="", show_default=True, type=str, help="备注（可选）。")
+@click.option("--date", "date_value", type=str, help="支出日期（ISO 格式）。")
 def add_command(amount: float, category: str, note: str, date_value: str | None) -> None:
-    """Add a new expense."""
+    """添加一笔新支出。"""
     try:
         normalized_category = category.strip().lower()
         if not validate_category(normalized_category):
@@ -141,23 +142,23 @@ def add_command(amount: float, category: str, note: str, date_value: str | None)
             date=expense_date,
         )
         saved_expense = add_expense(expense)
-        _console.print("[green]Expense added:[/green]")
+        _console.print("[green]已添加支出：[/green]")
         _render_expenses([saved_expense])
     except WhyLoseMoneyError as exc:
         _raise_click_exception(exc)
 
 
 @cli.command("list")
-@click.option("--from", "date_from", type=str, help="Start date in YYYY-MM-DD or ISO format.")
-@click.option("--to", "date_to", type=str, help="End date in YYYY-MM-DD or ISO format.")
+@click.option("--from", "date_from", type=str, help="起始日期（ISO 格式）。")
+@click.option("--to", "date_to", type=str, help="截止日期（ISO 格式）。")
 def list_command(date_from: str | None, date_to: str | None) -> None:
-    """List expenses with optional date range filtering."""
+    """列出支出记录，支持按日期范围筛选。"""
     try:
         from_value = _parse_datetime(date_from) if date_from else None
         to_value = _parse_datetime(date_to, end_of_day=True) if date_to else None
         expenses = list_expenses(from_value, to_value)
         if not expenses:
-            _console.print("[yellow]No expenses found.[/yellow]")
+            _console.print("[yellow]未找到支出记录。[/yellow]")
             return
         _render_expenses(expenses)
     except WhyLoseMoneyError as exc:
@@ -169,14 +170,14 @@ def list_command(date_from: str | None, date_to: str | None) -> None:
     "--period",
     required=True,
     type=click.Choice(["monthly", "weekly", "daily"], case_sensitive=False),
-    help="Summary period.",
+    help="汇总周期。",
 )
 def analyze_command(period: str) -> None:
-    """Analyze expenses for a selected period."""
+    """按时间段分析支出情况。"""
     try:
         expenses = list_expenses()
         if not expenses:
-            _console.print("[yellow]No expenses available for analysis.[/yellow]")
+            _console.print("[yellow]没有可分析的支出数据。[/yellow]")
             return
 
         summary_map = {
@@ -194,34 +195,34 @@ def analyze_command(period: str) -> None:
 
 
 @cli.command("import")
-@click.option("--file", "file_path", required=True, type=click.Path(exists=True), help="CSV file to import.")
-@click.option("--resume", is_flag=True, default=False, help="Resume from last checkpoint.")
+@click.option("--file", "file_path", required=True, type=click.Path(exists=True), help="要导入的 CSV 文件。")
+@click.option("--resume", is_flag=True, default=False, help="从上次断点继续。")
 def import_command(file_path: str, resume: bool) -> None:
-    """Import expenses from a CSV file."""
+    """从 CSV 文件批量导入支出。"""
     try:
         from pathlib import Path
 
         from whylosemoney.importer import import_csv
 
         result = import_csv(Path(file_path), resume=resume)
-        _console.print(f"[green]Succeeded: {result.succeeded}[/green]")
-        _console.print(f"[red]Failed: {result.failed}[/red]")
-        _console.print(f"[yellow]Skipped: {result.skipped}[/yellow]")
+        _console.print(f"[green]成功：{result.succeeded}[/green]")
+        _console.print(f"[red]失败：{result.failed}[/red]")
+        _console.print(f"[yellow]跳过：{result.skipped}[/yellow]")
         if result.errors:
             for row_num, msg in result.errors:
-                _console.print(f"  Row {row_num}: {msg}")
+                _console.print(f"  第 {row_num} 行：{msg}")
     except WhyLoseMoneyError as exc:
         _raise_click_exception(exc)
 
 
 @cli.command("delete")
-@click.option("--id", "expense_id", required=True, type=click.UUID, help="Expense ID.")
+@click.option("--id", "expense_id", required=True, type=click.UUID, help="支出 ID。")
 def delete_command(expense_id: UUID) -> None:
-    """Delete an expense by ID."""
+    """按 ID 删除一笔支出。"""
     try:
         expense_id_str = str(expense_id)
         if not delete_expense(expense_id_str):
-            raise click.ClickException(f"Expense not found: {expense_id_str}")
-        _console.print(f"[green]Deleted expense: {expense_id_str}[/green]")
+            raise click.ClickException(f"未找到该支出：{expense_id_str}")
+        _console.print(f"[green]已删除支出：{expense_id_str}[/green]")
     except WhyLoseMoneyError as exc:
         _raise_click_exception(exc)

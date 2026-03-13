@@ -44,13 +44,13 @@ def _load_records(handle: IO[str]) -> dict[str, list[dict[str, object]]]:
             return {"expenses": []}
         data = json.loads(raw_content)
         if not isinstance(data, dict):
-            raise ValueError("Storage file is malformed.")
+            raise ValueError("存储文件格式错误。")
         expenses = data.get("expenses", [])
         if not isinstance(expenses, list):
-            raise ValueError("Storage file is malformed.")
+            raise ValueError("存储文件格式错误。")
         return {"expenses": expenses}
     except (json.JSONDecodeError, ValueError) as exc:
-        raise StorageError(f"Failed to parse storage file: {exc}") from exc
+        raise StorageError(f"存储文件解析失败：{exc}") from exc
 
 
 def _write_records(handle: IO[str], data: dict[str, list[dict[str, object]]]) -> None:

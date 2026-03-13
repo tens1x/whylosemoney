@@ -4,20 +4,20 @@ from __future__ import annotations
 
 
 class WhyLoseMoneyError(Exception):
-    """Base exception for all WhyLoseMoney errors."""
+    """WhyLoseMoney 基础异常。"""
 
 
 class StorageError(WhyLoseMoneyError):
-    """Raised when storage operations fail."""
+    """存储操作失败时抛出。"""
 
 
 class ConfigError(WhyLoseMoneyError):
-    """Raised when configuration is invalid or cannot be loaded."""
+    """配置无效或无法加载时抛出。"""
 
 
 class ImportError_(WhyLoseMoneyError):
-    """Raised when import operations fail."""
+    """导入操作失败时抛出。"""
 
 
 class CategoryError(WhyLoseMoneyError):
-    """Raised when category validation fails."""
+    """分类校验失败时抛出。"""

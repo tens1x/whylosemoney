@@ -32,7 +32,7 @@ class Expense(BaseModel):
     def validate_amount(cls, value: float) -> float:
         """Ensure that expense amounts are positive."""
         if value <= 0:
-            raise ValueError("Amount must be positive.")
+            raise ValueError("金额必须为正数。")
         return value
 
     @field_validator("category")
@@ -40,7 +40,7 @@ class Expense(BaseModel):
     def validate_category(cls, value: str) -> str:
         """Ensure that categories are non-empty strings."""
         if not value:
-            raise ValueError("Category must not be empty.")
+            raise ValueError("分类不能为空。")
         return value.lower()
 
     @field_validator("note", mode="before")

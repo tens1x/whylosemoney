@@ -31,16 +31,16 @@ def load_config() -> Settings:
     try:
         raw_data = json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
-        raise ConfigError(f"Failed to load config: {exc}") from exc
+        raise ConfigError(f"配置加载失败：{exc}") from exc
 
     if not isinstance(raw_data, dict):
-        raise ConfigError("Failed to load config: config root must be a JSON object.")
+        raise ConfigError("配置加载失败：配置根节点必须是 JSON 对象。")
 
     merged = {**defaults, **raw_data}
     try:
         return Settings.model_validate(merged)
     except ValidationError as exc:
-        raise ConfigError(f"Failed to validate config: {exc}") from exc
+        raise ConfigError(f"配置验证失败：{exc}") from exc
 
 
 def save_config(settings: Settings) -> None:
@@ -52,7 +52,7 @@ def save_config(settings: Settings) -> None:
             encoding="utf-8",
         )
     except OSError as exc:
-        raise ConfigError(f"Failed to save config: {exc}") from exc
+        raise ConfigError(f"配置保存失败：{exc}") from exc
 
 
 def update_config(**overrides: object) -> Settings:
@@ -62,6 +62,6 @@ def update_config(**overrides: object) -> Settings:
     try:
         updated = Settings.model_validate(merged)
     except ValidationError as exc:
-        raise ConfigError(f"Failed to validate config: {exc}") from exc
+        raise ConfigError(f"配置验证失败：{exc}") from exc
     save_config(updated)
     return updated

@@ -27,7 +27,7 @@ def test_add_expense_flow(monkeypatch, capsys) -> None:
     assert captured["expense"].category == "food"
     assert captured["expense"].note == "coffee"
     assert captured["expense"].date == datetime(2026, 3, 12)
-    assert "Added expense" in capsys.readouterr().out
+    assert "已添加支出" in capsys.readouterr().out
 
 
 def test_list_expenses_empty(monkeypatch, capsys) -> None:
@@ -39,7 +39,7 @@ def test_list_expenses_empty(monkeypatch, capsys) -> None:
 
     tui._list_expenses()
 
-    assert "No expenses found" in capsys.readouterr().out
+    assert "未找到支出记录" in capsys.readouterr().out
 
 
 def test_settings_menu(monkeypatch, capsys) -> None:
@@ -61,4 +61,4 @@ def test_settings_menu(monkeypatch, capsys) -> None:
 
     assert calls == [{"currency": "USD"}]
     assert state["settings"].currency == "USD"
-    assert "Settings updated" in capsys.readouterr().out
+    assert "设置已更新" in capsys.readouterr().out

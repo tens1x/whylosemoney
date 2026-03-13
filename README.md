@@ -1,31 +1,31 @@
 # WhyLoseMoney
 
-A CLI-based personal expense tracker and analyzer that helps you understand where your money goes.
+一个基于 CLI 的个人支出追踪与分析工具，帮助你了解钱都花到哪里去了。
 
-## Features
+## 功能特性
 
-- Interactive TUI with colored tables and menu navigation
-- Add, list, analyze, and delete expenses
-- CSV batch import with checkpoint resume
-- Configurable settings (currency, date format, page size)
-- Audit history logging
-- Cross-platform support (macOS, Linux, Windows)
+- 提供带彩色表格和菜单导航的交互式 TUI
+- 支持添加、查看、分析和删除支出
+- 支持带断点续传的 CSV 批量导入
+- 支持可配置设置（货币、日期格式、每页条数）
+- 提供操作审计历史记录
+- 支持跨平台运行（macOS、Linux、Windows）
 
-## Installation
+## 安装
 
-### From PyPI (recommended)
+### 从 PyPI 安装（推荐）
 
 ```bash
 pip install whylosemoney
 ```
 
-### With pipx (isolated environment)
+### 使用 pipx（隔离环境）
 
 ```bash
 pipx install whylosemoney
 ```
 
-### From source
+### 从源码安装
 
 ```bash
 git clone https://github.com/tens1x/whylosemoney.git
@@ -33,17 +33,17 @@ cd whylosemoney
 pip install -e .[dev]
 ```
 
-## Usage
+## 使用方式
 
-### Interactive Mode
+### 交互模式
 
 ```bash
 whylosemoney
 ```
 
-Launches the interactive TUI with menu navigation, paginated lists, and colored output.
+启动交互式 TUI，提供菜单导航、分页列表和带颜色的输出。
 
-### CLI Mode
+### CLI 模式
 
 ```bash
 # Add an expense
@@ -63,7 +63,7 @@ whylosemoney import --file expenses.csv --resume
 whylosemoney delete --id <expense-uuid>
 ```
 
-### CSV Import Format
+### CSV 导入格式
 
 ```csv
 amount,category,date,note
@@ -71,33 +71,33 @@ amount,category,date,note
 12.0,transport,2026-03-12,metro
 ```
 
-## Configuration
+## 配置
 
-Settings are stored in `~/.whylosemoney/config.json`:
+设置保存在 `~/.whylosemoney/config.json`：
 
-| Setting | Default | Description |
+| 设置项 | 默认值 | 说明 |
 |---------|---------|-------------|
-| currency | CNY | Display currency |
-| date_format | %Y-%m-%d | Date display format |
-| page_size | 20 | Items per page in list view |
-| default_category | other | Default expense category |
-| custom_categories | [] | User-defined categories |
+| currency | CNY | 显示货币 |
+| date_format | %Y-%m-%d | 日期显示格式 |
+| page_size | 20 | 列表视图每页条数 |
+| default_category | other | 默认支出分类 |
+| custom_categories | [] | 用户自定义分类 |
 
-Edit settings interactively via the TUI Settings menu, or manually edit the config file.
+你可以通过 TUI 的设置菜单交互式修改这些设置，也可以直接手动编辑配置文件。
 
-## Data Storage
+## 数据存储
 
-- Expenses: `~/.whylosemoney/data.json`
-- Configuration: `~/.whylosemoney/config.json`
-- Audit log: `~/.whylosemoney/history.jsonl`
+- 支出数据：`~/.whylosemoney/data.json`
+- 配置文件：`~/.whylosemoney/config.json`
+- 审计日志：`~/.whylosemoney/history.jsonl`
 
-## Development
+## 开发
 
 ```bash
 pip install -e .[dev]
 pytest -v
 ```
 
-## License
+## 许可证
 
 MIT

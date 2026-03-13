@@ -83,8 +83,8 @@ def test_add_command_renders_expense_table(tmp_path: Path, monkeypatch) -> None:
     )
 
     assert result.exit_code == 0
-    assert "Expense added:" in result.output
-    assert "Expenses" in result.output
+    assert "已添加支出" in result.output
+    assert "支出记录" in result.output
     assert "food" in result.output
     assert "35.60" in result.output
 
@@ -98,9 +98,9 @@ def test_analyze_command_renders_rich_sections(tmp_path: Path, monkeypatch) -> N
     result = runner.invoke(cli_module.cli, ["analyze", "--period", "monthly"])
 
     assert result.exit_code == 0
-    assert "Monthly Summary" in result.output
-    assert "Category Breakdown" in result.output
-    assert "Top Expenses" in result.output
+    assert "月度汇总" in result.output
+    assert "分类明细" in result.output
+    assert "最大支出" in result.output
     assert "shopping" in result.output
     assert "80.00" in result.output
 
@@ -121,9 +121,9 @@ def test_import_command_reports_summary(tmp_path: Path, monkeypatch) -> None:
     result = runner.invoke(cli_module.cli, ["import", "--file", str(csv_file)])
 
     assert result.exit_code == 0
-    assert "Succeeded: 2" in result.output
-    assert "Failed: 0" in result.output
-    assert "Skipped: 0" in result.output
+    assert "成功：2" in result.output
+    assert "失败：0" in result.output
+    assert "跳过：0" in result.output
 
 
 def test_list_command_wraps_storage_errors(tmp_path: Path, monkeypatch) -> None:

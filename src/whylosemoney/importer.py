@@ -33,7 +33,7 @@ def import_csv(file_path: Path, *, resume: bool = False) -> ImportResult:
     """Import expenses from a CSV file and optionally resume from a checkpoint."""
     csv_path = Path(file_path)
     if not csv_path.exists() or not csv_path.is_file():
-        raise ImportError_(f"CSV file not found: {csv_path}")
+        raise ImportError_(f"CSV 文件未找到：{csv_path}")
 
     start_row = _load_checkpoint(csv_path) if resume else None
     existing_keys = {
@@ -73,9 +73,9 @@ def import_csv(file_path: Path, *, resume: bool = False) -> ImportResult:
                 if row_number % 50 == 0:
                     _save_checkpoint(csv_path, row_number)
     except OSError as exc:
-        raise ImportError_(f"Failed to read CSV file: {exc}") from exc
+        raise ImportError_(f"CSV 文件读取失败：{exc}") from exc
     except csv.Error as exc:
-        raise ImportError_(f"Failed to parse CSV file: {exc}") from exc
+        raise ImportError_(f"CSV 文件解析失败：{exc}") from exc
 
     _clear_checkpoint()
     return result
@@ -88,7 +88,7 @@ def _save_checkpoint(file_path: Path, last_row: int) -> None:
         CHECKPOINT_FILE.parent.mkdir(parents=True, exist_ok=True)
         CHECKPOINT_FILE.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     except OSError as exc:
-        raise ImportError_(f"Failed to save checkpoint: {exc}") from exc
+        raise ImportError_(f"检查点保存失败：{exc}") from exc
 
 
 def _load_checkpoint(file_path: Path) -> Optional[int]:
@@ -118,17 +118,17 @@ def _clear_checkpoint() -> None:
         if CHECKPOINT_FILE.exists():
             CHECKPOINT_FILE.unlink()
     except OSError as exc:
-        raise ImportError_(f"Failed to clear checkpoint: {exc}") from exc
+        raise ImportError_(f"检查点清理失败：{exc}") from exc
 
 
 def _validate_columns(fieldnames: Optional[list[str]]) -> None:
     if fieldnames is None:
-        raise ImportError_("CSV file is empty.")
+        raise ImportError_("CSV 文件为空。")
 
     normalized = {name.strip() for name in fieldnames if name is not None}
     missing = sorted(_REQUIRED_COLUMNS - normalized)
     if missing:
-        raise ImportError_(f"CSV file is missing required columns: {', '.join(missing)}")
+        raise ImportError_(f"CSV 文件缺少必需列：{', '.join(missing)}")
 
 
 def _expense_from_row(raw_row: Optional[Dict[str, Any]]) -> Expense:
@@ -149,7 +149,7 @@ def _expense_from_row(raw_row: Optional[Dict[str, Any]]) -> Expense:
 
 def _normalize_row(raw_row: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     if raw_row is None:
-        raise ValueError("Row is empty.")
+        raise ValueError("行数据为空。")
 
     normalized: Dict[str, Any] = {}
     for key, value in raw_row.items():

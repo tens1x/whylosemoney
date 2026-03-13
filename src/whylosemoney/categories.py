@@ -33,7 +33,7 @@ def add_custom_category(category: str) -> str:
     """Persist a custom category and return its normalized value."""
     normalized = _normalize(category)
     if not normalized:
-        raise CategoryError("Category must not be empty.")
+        raise CategoryError("分类不能为空。")
 
     categories = set(load_config().custom_categories)
     if normalized not in DEFAULT_CATEGORIES:

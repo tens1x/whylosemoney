@@ -22,6 +22,7 @@ from whylosemoney.importer import ImportResult, import_csv
 from whylosemoney.models import Expense
 
 console = Console()
+_PERIOD_LABELS = {"daily": "每日", "weekly": "每周", "monthly": "月度"}
 
 
 def main_menu() -> None:
@@ -38,19 +39,19 @@ def main_menu() -> None:
 
     while True:
         console.print(Panel.fit(f"WhyLoseMoney v{__version__}"))
-        console.print("1. Add expense")
-        console.print("2. List expenses")
-        console.print("3. Analyze spending")
-        console.print("4. Delete expense")
-        console.print("5. Import from CSV")
-        console.print("6. View history")
-        console.print("7. Settings")
-        console.print("0. Exit")
+        console.print("1. 添加支出")
+        console.print("2. 查看支出")
+        console.print("3. 分析消费")
+        console.print("4. 删除支出")
+        console.print("5. 导入 CSV")
+        console.print("6. 操作历史")
+        console.print("7. 设置")
+        console.print("0. 退出")
 
         try:
-            choice = Prompt.ask("Select an option", choices=["0", "1", "2", "3", "4", "5", "6", "7"])
+            choice = Prompt.ask("请选择", choices=["0", "1", "2", "3", "4", "5", "6", "7"])
         except KeyboardInterrupt:
-            console.print("[yellow]Goodbye![/yellow]")
+            console.print("[yellow]再见！[/yellow]")
             break
 
         if choice == "0":
@@ -63,11 +64,11 @@ def _add_expense() -> None:
     """Prompt the user for expense fields and save the result."""
     try:
         categories = ", ".join(get_all_categories())
-        amount = float(Prompt.ask("Amount"))
-        category = Prompt.ask(f"Category ({categories})").strip().lower()
-        note = Prompt.ask("Note", default="")
+        amount = float(Prompt.ask("金额"))
+        category = Prompt.ask(f"分类（{categories}）").strip().lower()
+        note = Prompt.ask("备注", default="")
         date_input = Prompt.ask(
-            "Date (YYYY-MM-DD or ISO datetime)",
+            "日期（YYYY-MM-DD 或 ISO 格式）",
             default=datetime.now().date().isoformat(),
         ).strip()
         expense_date = datetime.fromisoformat(date_input)
@@ -82,25 +83,25 @@ def _add_expense() -> None:
             date=expense_date,
         )
         saved_expense = storage.add_expense(expense)
-        console.print(f"[green]Added expense {saved_expense.id}.[/green]")
+        console.print(f"[green]已添加支出 {saved_expense.id}。[/green]")
     except KeyboardInterrupt:
-        console.print("[yellow]Cancelled.[/yellow]")
+        console.print("[yellow]已取消。[/yellow]")
     except (ValidationError, ValueError, WhyLoseMoneyError) as exc:
-        console.print(f"[red]Error: {exc}[/red]")
+        console.print(f"[red]错误：{exc}[/red]")
 
 
 def _list_expenses() -> None:
     """Show expenses in a paginated rich table."""
     try:
         settings = load_config()
-        date_from_input = Prompt.ask("From date (optional)", default="").strip()
-        date_to_input = Prompt.ask("To date (optional)", default="").strip()
+        date_from_input = Prompt.ask("起始日期（可选）", default="").strip()
+        date_to_input = Prompt.ask("截止日期（可选）", default="").strip()
         date_from = _parse_datetime(date_from_input) if date_from_input else None
         date_to = _parse_datetime(date_to_input, end_of_day=True) if date_to_input else None
 
         expenses = storage.list_expenses(date_from=date_from, date_to=date_to)
         if not expenses:
-            console.print("[yellow]No expenses found.[/yellow]")
+            console.print("[yellow]未找到支出记录。[/yellow]")
             return
 
         page_size = max(settings.page_size, 1)
@@ -112,12 +113,12 @@ def _list_expenses() -> None:
             end_index = start_index + page_size
             page_items = expenses[start_index:end_index]
 
-            table = Table(title="Expenses")
+            table = Table(title="支出记录")
             table.add_column("ID", style="dim", no_wrap=True)
-            table.add_column("Date", style="cyan")
-            table.add_column("Category", style="green")
-            table.add_column("Amount", style="yellow", justify="right")
-            table.add_column("Note", style="white")
+            table.add_column("日期", style="cyan")
+            table.add_column("分类", style="green")
+            table.add_column("金额", style="yellow", justify="right")
+            table.add_column("备注", style="white")
 
             for expense in page_items:
                 table.add_row(
@@ -129,9 +130,9 @@ def _list_expenses() -> None:
                 )
 
             console.print(table)
-            console.print(f"Page {current_page + 1} of {total_pages}")
+            console.print(f"第 {current_page + 1} 页 / 共 {total_pages} 页")
             action = Prompt.ask(
-                "[n]ext / [p]revious / [q]uit",
+                "[n] 下一页 / [p] 上一页 / [q] 返回",
                 choices=["n", "p", "q"],
                 default="q",
             )
@@ -144,7 +145,7 @@ def _list_expenses() -> None:
     except KeyboardInterrupt:
         return
     except (ValidationError, ValueError, WhyLoseMoneyError) as exc:
-        console.print(f"[red]Error: {exc}[/red]")
+        console.print(f"[red]错误：{exc}[/red]")
 
 
 def _analyze() -> None:
@@ -152,13 +153,13 @@ def _analyze() -> None:
     try:
         settings = load_config()
         period = Prompt.ask(
-            "Summary period",
+            "汇总周期",
             choices=["daily", "weekly", "monthly"],
             default="monthly",
         )
         expenses = storage.list_expenses()
         if not expenses:
-            console.print("[yellow]No expenses available for analysis.[/yellow]")
+            console.print("[yellow]没有可分析的支出数据。[/yellow]")
             return
 
         summary_map = {
@@ -171,25 +172,25 @@ def _analyze() -> None:
         breakdown = analyzer.percentage_breakdown(expenses)
         top_items = analyzer.top_expenses(expenses, n=5)
 
-        summary_table = Table(title=f"{period.capitalize()} Summary")
-        summary_table.add_column("Period", style="cyan")
-        summary_table.add_column("Total", style="yellow", justify="right")
+        summary_table = Table(title=f"{_PERIOD_LABELS[period]}汇总")
+        summary_table.add_column("时段", style="cyan")
+        summary_table.add_column("合计", style="yellow", justify="right")
         for label, total in summary.items():
             summary_table.add_row(label, f"{total:.2f}")
 
-        breakdown_table = Table(title="Category Breakdown")
-        breakdown_table.add_column("Category", style="green")
-        breakdown_table.add_column("Total", style="yellow", justify="right")
-        breakdown_table.add_column("Percentage", style="cyan", justify="right")
+        breakdown_table = Table(title="分类明细")
+        breakdown_table.add_column("分类", style="green")
+        breakdown_table.add_column("合计", style="yellow", justify="right")
+        breakdown_table.add_column("占比", style="cyan", justify="right")
         for category, total in totals.items():
             breakdown_table.add_row(category, f"{total:.2f}", f"{breakdown.get(category, 0):.2f}%")
 
-        top_table = Table(title="Top 5 Expenses")
+        top_table = Table(title="最大支出")
         top_table.add_column("ID", style="dim", no_wrap=True)
-        top_table.add_column("Date", style="cyan")
-        top_table.add_column("Category", style="green")
-        top_table.add_column("Amount", style="yellow", justify="right")
-        top_table.add_column("Note", style="white")
+        top_table.add_column("日期", style="cyan")
+        top_table.add_column("分类", style="green")
+        top_table.add_column("金额", style="yellow", justify="right")
+        top_table.add_column("备注", style="white")
         for expense in top_items:
             top_table.add_row(
                 expense.id,
@@ -203,40 +204,40 @@ def _analyze() -> None:
         console.print(breakdown_table)
         console.print(top_table)
     except KeyboardInterrupt:
-        console.print("[yellow]Cancelled.[/yellow]")
+        console.print("[yellow]已取消。[/yellow]")
     except WhyLoseMoneyError as exc:
-        console.print(f"[red]Error: {exc}[/red]")
+        console.print(f"[red]错误：{exc}[/red]")
 
 
 def _delete_expense() -> None:
     """Prompt for an expense ID and delete it after confirmation."""
     try:
-        expense_id = Prompt.ask("Expense ID").strip()
-        if not Confirm.ask("Are you sure?", default=False):
-            console.print("[yellow]Cancelled.[/yellow]")
+        expense_id = Prompt.ask("支出 ID").strip()
+        if not Confirm.ask("确定删除？", default=False):
+            console.print("[yellow]已取消。[/yellow]")
             return
 
         if storage.delete_expense(expense_id):
-            console.print(f"[green]Deleted expense {expense_id}.[/green]")
+            console.print(f"[green]已删除支出 {expense_id}。[/green]")
         else:
-            console.print(f"[yellow]Expense not found: {expense_id}[/yellow]")
+            console.print(f"[yellow]未找到该支出：{expense_id}[/yellow]")
     except KeyboardInterrupt:
-        console.print("[yellow]Cancelled.[/yellow]")
+        console.print("[yellow]已取消。[/yellow]")
     except WhyLoseMoneyError as exc:
-        console.print(f"[red]Error: {exc}[/red]")
+        console.print(f"[red]错误：{exc}[/red]")
 
 
 def _import_csv_menu() -> None:
     """Prompt for a CSV path and display the import summary."""
     try:
-        file_path_value = Prompt.ask("CSV file path").strip()
-        resume = Confirm.ask("Resume from checkpoint?", default=False)
+        file_path_value = Prompt.ask("CSV 文件路径").strip()
+        resume = Confirm.ask("从断点继续？", default=False)
         result = import_csv(Path(file_path_value), resume=resume)
         _render_import_result(result)
     except KeyboardInterrupt:
-        console.print("[yellow]Cancelled.[/yellow]")
+        console.print("[yellow]已取消。[/yellow]")
     except WhyLoseMoneyError as exc:
-        console.print(f"[red]Error: {exc}[/red]")
+        console.print(f"[red]错误：{exc}[/red]")
 
 
 def _view_history() -> None:
@@ -244,13 +245,13 @@ def _view_history() -> None:
     try:
         history = storage.get_history()
         if not history:
-            console.print("[yellow]No history available.[/yellow]")
+            console.print("[yellow]暂无操作历史。[/yellow]")
             return
 
-        table = Table(title="History")
-        table.add_column("Timestamp", style="cyan")
-        table.add_column("Operation", style="green")
-        table.add_column("Detail", style="white")
+        table = Table(title="操作历史")
+        table.add_column("时间", style="cyan")
+        table.add_column("操作", style="green")
+        table.add_column("详情", style="white")
 
         for entry in history:
             table.add_row(
@@ -260,9 +261,9 @@ def _view_history() -> None:
             )
         console.print(table)
     except KeyboardInterrupt:
-        console.print("[yellow]Cancelled.[/yellow]")
+        console.print("[yellow]已取消。[/yellow]")
     except WhyLoseMoneyError as exc:
-        console.print(f"[red]Error: {exc}[/red]")
+        console.print(f"[red]错误：{exc}[/red]")
 
 
 def _settings_menu() -> None:
@@ -270,16 +271,16 @@ def _settings_menu() -> None:
     try:
         while True:
             settings = load_config()
-            console.print(Panel(_format_settings(settings), title="Current Settings"))
-            console.print("1. Currency")
-            console.print("2. Date format")
-            console.print("3. Page size")
-            console.print("4. Default category")
-            console.print("5. Custom categories")
-            console.print("0. Back")
+            console.print(Panel(_format_settings(settings), title="当前设置"))
+            console.print("1. 货币")
+            console.print("2. 日期格式")
+            console.print("3. 每页条数")
+            console.print("4. 默认分类")
+            console.print("5. 自定义分类")
+            console.print("0. 返回")
 
             choice = Prompt.ask(
-                "Select setting to edit",
+                "选择要编辑的设置",
                 choices=["0", "1", "2", "3", "4", "5"],
             )
             if choice == "0":
@@ -287,17 +288,17 @@ def _settings_menu() -> None:
 
             updated_settings = settings
             if choice == "1":
-                currency = Prompt.ask("Currency", default=settings.currency).strip()
+                currency = Prompt.ask("货币", default=settings.currency).strip()
                 updated_settings = update_config(currency=currency)
             elif choice == "2":
-                date_format = Prompt.ask("Date format", default=settings.date_format).strip()
+                date_format = Prompt.ask("日期格式", default=settings.date_format).strip()
                 updated_settings = update_config(date_format=date_format)
             elif choice == "3":
-                page_size = IntPrompt.ask("Page size", default=settings.page_size)
+                page_size = IntPrompt.ask("每页条数", default=settings.page_size)
                 updated_settings = update_config(page_size=page_size)
             elif choice == "4":
                 default_category = Prompt.ask(
-                    "Default category",
+                    "默认分类",
                     default=settings.default_category,
                 ).strip().lower()
                 if not validate_category(default_category):
@@ -305,7 +306,7 @@ def _settings_menu() -> None:
                 updated_settings = update_config(default_category=default_category)
             elif choice == "5":
                 raw_categories = Prompt.ask(
-                    "Custom categories (comma separated)",
+                    "自定义分类（逗号分隔）",
                     default=", ".join(settings.custom_categories),
                 )
                 categories = _parse_custom_categories(raw_categories)
@@ -314,12 +315,12 @@ def _settings_menu() -> None:
                         add_custom_category(category)
                 updated_settings = update_config(custom_categories=categories)
 
-            console.print("[green]Settings updated.[/green]")
-            console.print(Panel(_format_settings(updated_settings), title="Updated Settings"))
+            console.print("[green]设置已更新。[/green]")
+            console.print(Panel(_format_settings(updated_settings), title="更新后的设置"))
     except KeyboardInterrupt:
-        console.print("[yellow]Cancelled.[/yellow]")
+        console.print("[yellow]已取消。[/yellow]")
     except (ValidationError, ValueError, WhyLoseMoneyError) as exc:
-        console.print(f"[red]Error: {exc}[/red]")
+        console.print(f"[red]错误：{exc}[/red]")
 
 
 def _parse_datetime(value: str, *, end_of_day: bool = False) -> datetime:
@@ -338,30 +339,30 @@ def _format_expense_date(value: datetime, settings: Settings) -> str:
 
 
 def _render_import_result(result: ImportResult) -> None:
-    summary = Table(title="Import Summary")
-    summary.add_column("Succeeded", style="green", justify="right")
-    summary.add_column("Failed", style="red", justify="right")
-    summary.add_column("Skipped", style="yellow", justify="right")
+    summary = Table(title="导入汇总")
+    summary.add_column("成功", style="green", justify="right")
+    summary.add_column("失败", style="red", justify="right")
+    summary.add_column("跳过", style="yellow", justify="right")
     summary.add_row(str(result.succeeded), str(result.failed), str(result.skipped))
     console.print(summary)
 
     if result.errors:
-        error_table = Table(title="Import Errors")
-        error_table.add_column("Row", style="cyan", justify="right")
-        error_table.add_column("Error", style="red")
+        error_table = Table(title="导入错误")
+        error_table.add_column("行", style="cyan", justify="right")
+        error_table.add_column("错误", style="red")
         for row_number, message in result.errors:
             error_table.add_row(str(row_number), message)
         console.print(error_table)
 
 
 def _format_settings(settings: Settings) -> str:
-    custom_categories = ", ".join(settings.custom_categories) or "(none)"
+    custom_categories = ", ".join(settings.custom_categories) or "（无）"
     return (
-        f"Currency: {settings.currency}\n"
-        f"Date format: {settings.date_format}\n"
-        f"Page size: {settings.page_size}\n"
-        f"Default category: {settings.default_category}\n"
-        f"Custom categories: {custom_categories}"
+        f"货币：{settings.currency}\n"
+        f"日期格式：{settings.date_format}\n"
+        f"每页条数：{settings.page_size}\n"
+        f"默认分类：{settings.default_category}\n"
+        f"自定义分类：{custom_categories}"
     )
 
 
@@ -374,5 +375,5 @@ if __name__ == "__main__":
     try:
         main_menu()
     except KeyboardInterrupt:
-        console.print("[yellow]Goodbye![/yellow]")
+        console.print("[yellow]再见！[/yellow]")
         sys.exit(0)

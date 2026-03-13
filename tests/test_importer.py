@@ -62,7 +62,7 @@ def test_import_with_bad_row(tmp_path: Path, monkeypatch) -> None:
     assert result.succeeded == 2
     assert result.failed == 1
     assert result.errors[0][0] == 3
-    assert "Amount must be positive" in result.errors[0][1]
+    assert "金额必须为正数" in result.errors[0][1]
 
 
 def test_import_skips_duplicates(tmp_path: Path, monkeypatch) -> None:
