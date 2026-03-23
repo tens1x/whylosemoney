@@ -26,3 +26,10 @@ htmlcov/
 
 # OS files
 .DS_Store
+
+# Project-specific
+*.db
+.streamlit/secrets.toml
+data/
+*.xml
+!tests/fixtures/*.xml

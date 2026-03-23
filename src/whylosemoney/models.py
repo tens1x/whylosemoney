@@ -1,58 +1,99 @@
-"""Pydantic data models for WhyLoseMoney."""
-
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from uuid import uuid4
+from datetime import date, datetime
+from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from sqlalchemy import (
+    BigInteger,
+    Date,
+    DateTime,
+    Float,
+    Integer,
+    JSON,
+    String,
+    Text,
+    UniqueConstraint,
+)
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
-def _normalize_datetime(value: datetime) -> datetime:
-    """Normalize datetimes to naive UTC for consistent storage and comparison."""
-    if value.tzinfo is None:
-        return value
-    return value.astimezone(timezone.utc).replace(tzinfo=None)
+class Base(DeclarativeBase):
+    pass
 
 
-class Expense(BaseModel):
-    """Represents a single expense entry."""
+class Trade(Base):
+    __tablename__ = "trades"
+    __table_args__ = (
+        UniqueConstraint("symbol", "datetime", "quantity", name="uq_trade"),
+    )
 
-    model_config = ConfigDict(str_strip_whitespace=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    symbol: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    datetime: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    quantity: Mapped[float] = mapped_column(Float, nullable=False)
+    price: Mapped[float] = mapped_column(Float, nullable=False)
+    proceeds: Mapped[float] = mapped_column(Float, default=0.0)
+    commission: Mapped[float] = mapped_column(Float, default=0.0)
+    realized_pnl: Mapped[float] = mapped_column(Float, default=0.0)
+    currency: Mapped[str] = mapped_column(String(10), default="USD")
+    asset_category: Mapped[str] = mapped_column(String(10), default="STK")
 
-    id: str = Field(default_factory=lambda: str(uuid4()))
-    amount: float
-    category: str
-    note: str = ""
-    date: datetime
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-    @field_validator("amount")
-    @classmethod
-    def validate_amount(cls, value: float) -> float:
-        """Ensure that expense amounts are positive."""
-        if value <= 0:
-            raise ValueError("金额必须为正数。")
-        return value
+class Position(Base):
+    __tablename__ = "positions"
 
-    @field_validator("category")
-    @classmethod
-    def validate_category(cls, value: str) -> str:
-        """Ensure that categories are non-empty strings."""
-        if not value:
-            raise ValueError("分类不能为空。")
-        return value.lower()
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    symbol: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    quantity: Mapped[float] = mapped_column(Float, nullable=False)
+    cost_basis_price: Mapped[float] = mapped_column(Float, default=0.0)
+    market_price: Mapped[float] = mapped_column(Float, default=0.0)
+    unrealized_pnl: Mapped[float] = mapped_column(Float, default=0.0)
+    as_of_date: Mapped[date] = mapped_column(Date, nullable=False)
 
-    @field_validator("note", mode="before")
-    @classmethod
-    def validate_note(cls, value: str | None) -> str:
-        """Default missing notes to an empty string."""
-        if value is None:
-            return ""
-        return str(value)
 
-    @field_validator("date", "created_at")
-    @classmethod
-    def normalize_datetime_fields(cls, value: datetime) -> datetime:
-        """Normalize stored datetimes for stable comparisons."""
-        return _normalize_datetime(value)
+class CashTransaction(Base):
+    __tablename__ = "cash_transactions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    symbol: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    datetime: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    amount: Mapped[float] = mapped_column(Float, nullable=False)
+    type: Mapped[str] = mapped_column(String(20), nullable=False)
+
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    source: Mapped[str] = mapped_column(String(50), nullable=False)
+    datetime: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    mentioned_tickers: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    sentiment: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+
+
+class NewsEvent(Base):
+    __tablename__ = "news_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    symbol: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    datetime: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    headline: Mapped[str] = mapped_column(String(500), nullable=False)
+    source: Mapped[str] = mapped_column(String(100), nullable=False)
+    url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+
+
+class PriceHistory(Base):
+    __tablename__ = "price_history"
+    __table_args__ = (
+        UniqueConstraint("symbol", "date", name="uq_price"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    symbol: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    date: Mapped[date] = mapped_column(Date, nullable=False)
+    open: Mapped[float] = mapped_column(Float, nullable=False)
+    high: Mapped[float] = mapped_column(Float, nullable=False)
+    low: Mapped[float] = mapped_column(Float, nullable=False)
+    close: Mapped[float] = mapped_column(Float, nullable=False)
+    volume: Mapped[int] = mapped_column(BigInteger, nullable=False)

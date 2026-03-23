@@ -4,22 +4,26 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "whylosemoney"
-version = "0.2.0"
-description = "CLI-based personal expense tracker and analyzer."
+version = "1.0.0"
+description = "IBKR portfolio analysis tool — find out why you lose money."
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
-    "click>=8.1",
+    "streamlit>=1.28,<1.51",
+    "pandas>=2.0,<2.1",
+    "numpy>=1.24,<2.1",
+    "ibflex>=0.14",
+    "yfinance>=0.2.31",
+    "finnhub-python>=2.4",
+    "plotly>=5.18",
+    "mplfinance>=0.12",
+    "sqlalchemy>=2.0",
     "pydantic>=2,<3",
-    "rich>=13.0",
-    "filelock>=3.12",
 ]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
-
-[project.scripts]
-whylosemoney = "whylosemoney.cli:cli"
+live = ["ib-insync>=0.9"]
 
 [tool.setuptools]
 package-dir = {"" = "src"}

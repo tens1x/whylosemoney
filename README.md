@@ -1,101 +1,106 @@
 # WhyLoseMoney
 
-一个基于 CLI 的个人支出追踪与分析工具，帮助你了解钱都花到哪里去了。
+IBKR 投资组合分析工具 — 搞清楚你的钱是怎么亏的。
+
+分析你的 Interactive Brokers 交易历史，检测常见亏钱模式（追高、重仓、没止损等），并将交易记录与新闻事件、聊天记录进行对照分析。
 
 ## 功能特性
 
-- 提供带彩色表格和菜单导航的交互式 TUI
-- 支持添加、查看、分析和删除支出
-- 支持带断点续传的 CSV 批量导入
-- 支持可配置设置（货币、日期格式、每页条数）
-- 提供操作审计历史记录
-- 支持跨平台运行（macOS、Linux、Windows）
+- 导入 IBKR Flex Query XML 交易数据
+- 投资概览仪表盘（KPI、累计盈亏曲线、持仓分布）
+- 盈亏分析（按股票/月度/持仓周期）
+- **亏钱原因检测**：追高买入、频繁交易、仓位集中、没止损、逆势操作
+- 事件时间线：K线 + 交易标记 + 新闻 + 聊天记录叠加
+- Gemini / 群聊记录导入与 ticker 提取
+- Finnhub 新闻关联分析
+
+## 前置要求
+
+- Python 3.9+
+- IBKR 账户（Flex Query 功能）
 
 ## 安装
-
-### 从 PyPI 安装（推荐）
-
-```bash
-pip install whylosemoney
-```
-
-### 使用 pipx（隔离环境）
-
-```bash
-pipx install whylosemoney
-```
-
-### 从源码安装
 
 ```bash
 git clone https://github.com/tens1x/whylosemoney.git
 cd whylosemoney
-pip install -e .[dev]
+python3 -m venv .venv
+source .venv/bin/activate    # Windows: .venv\Scripts\activate
+pip install -e ".[dev]"
 ```
 
 ## 使用方式
 
-### 交互模式
+### 启动仪表盘
 
 ```bash
-whylosemoney
+streamlit run src/whylosemoney/app/main.py
 ```
 
-启动交互式 TUI，提供菜单导航、分页列表和带颜色的输出。
+浏览器自动打开 http://localhost:8501
 
-### CLI 模式
+### 导入数据
 
-```bash
-# Add an expense
-whylosemoney add --amount 35.6 --category food --note "lunch" --date 2026-03-11
+1. 在侧边栏上传 IBKR Flex Query XML 文件
+2. 点击「解析并预览」确认数据
+3. 点击「确认导入数据库」
 
-# List expenses with optional date range
-whylosemoney list --from 2026-03-01 --to 2026-03-31
+### 导出 IBKR Flex Query
 
-# Analyze spending
-whylosemoney analyze --period monthly
+1. 登录 IBKR 账户管理 → Reports → Flex Queries
+2. 创建新的 Activity Flex Query
+3. 勾选以下部分：
+   - **Trades** — 所有字段
+   - **Open Positions** — 所有字段
+   - **Cash Transactions** — 所有字段
+4. 格式选 XML，日期范围选所需时段
+5. 运行并下载 XML 文件
 
-# Import from CSV
-whylosemoney import --file expenses.csv
-whylosemoney import --file expenses.csv --resume
+### 导入 Gemini 聊天记录
 
-# Delete an expense
-whylosemoney delete --id <expense-uuid>
+1. 前往 [Google Takeout](https://takeout.google.com/)
+2. 选择 Gemini Apps 数据
+3. 导出为 JSON 格式
+4. 在侧边栏上传 JSON 文件
+
+也支持纯文本聊天记录（.txt），格式：
+```
+[2024-01-15 10:30] user: NVDA looks good, AI is the future
+[2024-01-15 10:32] user: $AAPL earnings next week
 ```
 
-### CSV 导入格式
+### 设置
 
-```csv
-amount,category,date,note
-35.6,food,2026-03-11,lunch
-12.0,transport,2026-03-12,metro
-```
+在「设置」页面配置：
+- Finnhub API Key（获取新闻数据，免费注册：https://finnhub.io）
+- 检测阈值（追高涨幅%、频繁交易次数、集中度%、止损%）
 
-## 配置
+## 页面说明
 
-设置保存在 `~/.whylosemoney/config.json`：
-
-| 设置项 | 默认值 | 说明 |
-|---------|---------|-------------|
-| currency | CNY | 显示货币 |
-| date_format | %Y-%m-%d | 日期显示格式 |
-| page_size | 20 | 列表视图每页条数 |
-| default_category | other | 默认支出分类 |
-| custom_categories | [] | 用户自定义分类 |
-
-你可以通过 TUI 的设置菜单交互式修改这些设置，也可以直接手动编辑配置文件。
-
-## 数据存储
-
-- 支出数据：`~/.whylosemoney/data.json`
-- 配置文件：`~/.whylosemoney/config.json`
-- 审计日志：`~/.whylosemoney/history.jsonl`
+| 页面 | 功能 |
+|------|------|
+| 概览 | KPI 卡片、累计盈亏曲线、按股票盈亏柱状图、当前持仓表 |
+| 持仓 | 持仓详情表、仓位分布饼图、集中度预警 |
+| 交易 | 可筛选排序的交易历史表、CSV 导出 |
+| 盈亏分析 | 盈亏总览 / 持仓周期散点图 / **亏钱原因检测** |
+| 事件时间线 | K线图 + 交易标记 + 新闻蓝点 + 聊天橙点 + 叙事分析 |
+| 设置 | API Key、检测阈值配置 |
 
 ## 开发
 
 ```bash
-pip install -e .[dev]
+# 运行测试
 pytest -v
+
+# 代码结构
+src/whylosemoney/
+├── models.py          # SQLAlchemy ORM 模型
+├── db.py              # 数据库操作
+├── ibkr/              # IBKR 数据解析
+├── market/            # 市场数据（yfinance + Finnhub）
+├── analysis/          # 盈亏分析 + 亏钱原因检测
+├── chat/              # 聊天记录解析
+└── app/               # Streamlit 仪表盘
 ```
 
 ## 许可证

@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FlexQueryResponse queryName="Sample Flex Query" type="AF">
+  <FlexStatements count="1">
+    <FlexStatement
+      accountId="U1234567"
+      fromDate="2024-01-01"
+      toDate="2024-03-31"
+      period="Custom"
+      whenGenerated="2024-04-01;12:00:00"
+    >
+      <Trades>
+        <Trade
+          accountId="U1234567"
+          currency="USD"
+          assetCategory="STK"
+          symbol="AAPL"
+          description="APPLE INC"
+          reportDate="2024-01-15"
+          dateTime="2024-01-15;09:30:00"
+          tradeDate="2024-01-15"
+          quantity="100"
+          tradePrice="150"
+          proceeds="-15000"
+          ibCommission="-1"
+          fifoPnlRealized="0"
+          transactionType="ExchTrade"
+          buySell="BUY"
+          openCloseIndicator="O"
+          orderType="LMT"
+          levelOfDetail="EXECUTION"
+        />
+        <Trade
+          accountId="U1234567"
+          currency="USD"
+          assetCategory="STK"
+          symbol="AAPL"
+          description="APPLE INC"
+          reportDate="2024-02-20"
+          dateTime="2024-02-20;10:15:00"
+          tradeDate="2024-02-20"
+          quantity="-100"
+          tradePrice="155"
+          proceeds="15500"
+          ibCommission="-1"
+          fifoPnlRealized="500"
+          transactionType="ExchTrade"
+          buySell="SELL"
+          openCloseIndicator="C"
+          orderType="LMT"
+          levelOfDetail="EXECUTION"
+        />
+        <Trade
+          accountId="U1234567"
+          currency="USD"
+          assetCategory="STK"
+          symbol="NVDA"
+          description="NVIDIA CORP"
+          reportDate="2024-03-10"
+          dateTime="2024-03-10;11:00:00"
+          tradeDate="2024-03-10"
+          quantity="50"
+          tradePrice="400"
+          proceeds="-20000"
+          ibCommission="-1"
+          fifoPnlRealized="0"
+          transactionType="ExchTrade"
+          buySell="BUY"
+          openCloseIndicator="O"
+          orderType="LMT"
+          levelOfDetail="EXECUTION"
+        />
+      </Trades>
+      <OpenPositions>
+        <OpenPosition
+          side="Long"
+          assetCategory="STK"
+          accountId="U1234567"
+          currency="USD"
+          reportDate="2024-03-31"
+          symbol="NVDA"
+          description="NVIDIA CORP"
+          position="50"
+          markPrice="420"
+          costBasisPrice="400"
+          fifoPnlUnrealized="1000"
+          levelOfDetail="LOT"
+        />
+      </OpenPositions>
+      <CashTransactions>
+        <CashTransaction
+          accountId="U1234567"
+          currency="USD"
+          reportDate="2024-02-15"
+          dateTime="2024-02-15;00:00:00"
+          type="Dividends"
+          symbol="AAPL"
+          description="AAPL CASH DIVIDEND"
+          amount="50"
+        />
+      </CashTransactions>
+    </FlexStatement>
+  </FlexStatements>
+</FlexQueryResponse>
